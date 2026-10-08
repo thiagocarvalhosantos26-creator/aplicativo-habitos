@@ -6,13 +6,25 @@ import {
   type Session,
   type RecordEntry,
 } from "./domain.ts";
+import {
+  defaultDishes,
+  validateDishes,
+  type DishesData,
+  type DishesConfig,
+  type DishesEntry,
+} from "./dishes.ts";
+import { validDate } from "./domain.ts";
 export type Data = {
+  version: 2;
   config: Config;
   active: Session | null;
   history: RecordEntry[];
+  dishes: DishesData;
 };
 export const KEY = "flexoes:v1";
 export const defaults = (): Data => ({
+  version: 2,
+  dishes: defaultDishes(),
   config: {
     total: 50,
     perSet: 5,
@@ -92,6 +104,35 @@ function isRecord(v: unknown): v is RecordEntry {
       : record.status === "parcial" && v.done.length < v.plan.length)
   );
 }
+function isDishesEntry(v: unknown): v is DishesEntry {
+  return (
+    object(v) &&
+    typeof v.id === "string" &&
+    !!v.id.trim() &&
+    timestamp(v.at) &&
+    typeof v.date === "string" &&
+    validDate(v.date) &&
+    typeof v.time === "string" &&
+    /^([01]\d|2[0-3]):[0-5]\d:[0-5]\d$/.test(v.time) &&
+    typeof v.extra === "boolean"
+  );
+}
+function isDishes(v: unknown): v is DishesData {
+  if (!object(v) || !object(v.config)) return false;
+  const c = v.config;
+  if (
+    !integer(c.goal, 1, Number.MAX_SAFE_INTEGER) ||
+    typeof c.start !== "string" ||
+    !(c.mode === "daily" || c.mode === "week") ||
+    !Array.isArray(c.weekdays) ||
+    !c.weekdays.every((d) => integer(d, 0, 6)) ||
+    validateDishes(c as DishesConfig) ||
+    !Array.isArray(v.history) ||
+    !v.history.every(isDishesEntry)
+  )
+    return false;
+  return new Set(v.history.map((e) => e.id)).size === v.history.length;
+}
 export function parseData(raw: string): Data {
   const v: unknown = JSON.parse(raw);
   if (
@@ -111,7 +152,14 @@ export function parseData(raw: string): Data {
     (v.active !== null && ids.includes(v.active.id))
   )
     throw new Error("Identificadores de sessão duplicados");
+  // The published version had no schema version or dishes field. Migrate only
+  // this exact shape, in memory; never replace malformed/partial new data.
+  const legacy = !Object.hasOwn(v, "version") && !Object.hasOwn(v, "dishes");
+  if (!legacy && (v.version !== 2 || !isDishes(v.dishes)))
+    throw new Error("Dados de hábitos inconsistentes");
   return {
+    version: 2,
+    dishes: legacy ? defaultDishes() : (v.dishes as DishesData),
     config: v.config,
     active: v.active ? reconcile(v.active) : null,
     history: v.history,

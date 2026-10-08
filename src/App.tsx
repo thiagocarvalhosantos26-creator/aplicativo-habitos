@@ -23,6 +23,9 @@ import {
   type ReadResult,
 } from "./storage";
 import { Modal } from "./Modal";
+import { DishesCard, DishesSettings, DishesHistory } from "./DishesView";
+import { markDishes, undoDishes } from "./dishes";
+import { usePwaUpdate } from "./usePwaUpdate";
 const days = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 const dateLabel = (s: string) =>
   new Date(s + "T12:00:00").toLocaleDateString("pt-BR", {
@@ -42,13 +45,18 @@ export function App() {
   const [writeError, setWriteError] = useState("");
   const pendingWrite = useRef<Data | null>(null);
   const [resetOpen, setResetOpen] = useState(false);
-  const [view, setView] = useState<"home" | "config" | "history" | "workout">(
-    "home",
-  );
+  const [view, setView] = useState<
+    "home" | "config" | "dishes-config" | "history" | "workout"
+  >("home");
   const [now, setNow] = useState(Date.now());
   const [amount, setAmount] = useState("");
   const [summary, setSummary] = useState<RecordEntry | null>(null);
   const [confirm, setConfirm] = useState<"partial" | "discard" | null>(null);
+  const [historyHabit, setHistoryHabit] = useState<"flexoes" | "dishes">(
+    "flexoes",
+  );
+  const lastUndo = useRef(-Infinity);
+  const update = usePwaUpdate(!!data.active || !!readFailure || !!writeError);
   function commit(next: Data) {
     if (blocked.current) return false;
     try {
@@ -193,6 +201,31 @@ export function App() {
         <span className="eyebrow">UM DIA DE CADA VEZ</span>
       </header>
       <main>
+        {update.available && (
+          <section
+            className="notice update-notice"
+            aria-label="Atualização disponível"
+          >
+            <b>Uma atualização está disponível.</b>
+            <p>
+              {data.active
+                ? "Conclua ou encerre o treino antes de atualizar. Sua sessão continuará salva."
+                : "Carregue a nova versão quando estiver pronto. Seus dados serão mantidos."}
+            </p>
+            <button
+              className="secondary"
+              disabled={!!data.active || !!readFailure || !!writeError}
+              onClick={() => void update.apply()}
+            >
+              Carregar atualização
+            </button>
+          </section>
+        )}
+        {update.failure && (
+          <p className="notice" role="alert">
+            {update.failure}
+          </p>
+        )}
         {readFailure && (
           <section className="card recovery" aria-labelledby="recovery-title">
             <h1 id="recovery-title">Vamos proteger seus dados.</h1>
@@ -342,10 +375,37 @@ export function App() {
               <button onClick={() => setView("config")}>
                 <span>⚙</span>Configuração <span>→</span>
               </button>
-              <button onClick={() => setView("history")}>
+              <button
+                onClick={() => {
+                  setHistoryHabit("flexoes");
+                  setView("history");
+                }}
+              >
                 <span>◷</span>Histórico <span>→</span>
               </button>
             </div>
+            <DishesCard
+              data={data.dishes}
+              date={today}
+              onMark={() => {
+                const d = dataRef.current;
+                const dishes = markDishes(d.dishes);
+                if (dishes !== d.dishes) commit({ ...d, dishes });
+              }}
+              onUndo={() => {
+                const time = Date.now();
+                if (time - lastUndo.current < 1000) return;
+                const d = dataRef.current;
+                const dishes = undoDishes(d.dishes, localDate(new Date(time)));
+                if (dishes !== d.dishes && commit({ ...d, dishes }))
+                  lastUndo.current = time;
+              }}
+              onSettings={() => setView("dishes-config")}
+              onHistory={() => {
+                setHistoryHabit("dishes");
+                setView("history");
+              }}
+            />
             <details className="install">
               <summary>Adicionar à Tela de Início do iPhone</summary>
               <p>
@@ -360,6 +420,7 @@ export function App() {
           <>
             <Back onClick={() => setView("home")} />
             <h1>Seu planejamento</h1>
+            <span className="eyebrow">FLEXÕES</span>
             <p>
               Ajuste o treino ao seu ritmo. Uma sessão em andamento mantém sua
               configuração original.
@@ -372,45 +433,78 @@ export function App() {
             />
           </>
         )}
+        {!readFailure && view === "dishes-config" && (
+          <>
+            <Back onClick={() => setView("home")} />
+            <h1>Lavar as vasilhas</h1>
+            <p>Organize a rotina da casa, no seu ritmo.</p>
+            <DishesSettings
+              config={data.dishes.config}
+              onSave={(config) => {
+                const d = dataRef.current;
+                if (commit({ ...d, dishes: { ...d.dishes, config } }))
+                  setView("home");
+              }}
+            />
+          </>
+        )}
         {!readFailure && view === "history" && (
           <>
             <Back onClick={() => setView("home")} />
             <h1>Seu histórico</h1>
-            <p>Cada série conta.</p>
-            {data.history.length === 0 ? (
-              <section className="card">
-                <h2>Seu primeiro passo vem aí</h2>
-                <p>Os treinos salvos aparecerão aqui.</p>
-              </section>
+            <label className="history-filter">
+              Hábito
+              <select
+                value={historyHabit}
+                onChange={(e) =>
+                  setHistoryHabit(e.target.value as "flexoes" | "dishes")
+                }
+              >
+                <option value="flexoes">Flexões</option>
+                <option value="dishes">Lavar as vasilhas</option>
+              </select>
+            </label>
+            {historyHabit === "dishes" ? (
+              <DishesHistory data={data.dishes} />
             ) : (
-              data.history.map((r) => (
-                <details className="card history" key={r.id}>
-                  <summary>
-                    <div>
-                      <b>
-                        {new Date(r.started).toLocaleString("pt-BR", {
-                          dateStyle: "short",
-                          timeStyle: "short",
-                        })}
-                      </b>
-                      <span className="pill">{r.status}</span>
-                    </div>
-                    <p>
-                      {r.total} flexões · {r.done.length} séries ·{" "}
-                      {clock(r.duration)}
-                    </p>
-                  </summary>
-                  <p>Meta prevista: {r.goal} flexões</p>
-                  <ol>
-                    {r.done.map((n, i) => (
-                      <li key={i}>
-                        Série {i + 1}: {n} flexões (previstas: {r.plan[i]})
-                      </li>
-                    ))}
-                  </ol>
-                  <small>ID: {r.id}</small>
-                </details>
-              ))
+              <>
+                <p>Flexões · Cada série conta.</p>
+                {data.history.length === 0 ? (
+                  <section className="card">
+                    <h2>Seu primeiro passo vem aí</h2>
+                    <p>Os treinos salvos aparecerão aqui.</p>
+                  </section>
+                ) : (
+                  data.history.map((r) => (
+                    <details className="card history" key={r.id}>
+                      <summary>
+                        <div>
+                          <b>
+                            {new Date(r.started).toLocaleString("pt-BR", {
+                              dateStyle: "short",
+                              timeStyle: "short",
+                            })}
+                          </b>
+                          <span className="pill">{r.status}</span>
+                        </div>
+                        <p>
+                          {r.total} flexões · {r.done.length} séries ·{" "}
+                          {clock(r.duration)}
+                        </p>
+                      </summary>
+                      <p>Meta prevista: {r.goal} flexões</p>
+                      <ol>
+                        {r.done.map((n, i) => (
+                          <li key={i}>
+                            Série {i + 1}: {n} flexões (previstas: {r.plan[i]})
+                          </li>
+                        ))}
+                      </ol>
+                      <small>ID: {r.id}</small>
+                    </details>
+                  ))
+                )}
+              </>
             )}
           </>
         )}

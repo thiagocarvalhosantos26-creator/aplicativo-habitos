@@ -1,6 +1,6 @@
-# Flexões · Seu ritmo
+# Hábitos · Seu ritmo
 
-PWA em português do Brasil, feita com React, TypeScript e Vite. Sem login ou servidor: configuração, sessão ativa e histórico ficam em um único registro no localStorage.
+PWA em português do Brasil, feita com React, TypeScript e Vite, com os hábitos **Flexões** e **Lavar as vasilhas**. Sem login ou servidor: configurações, sessão ativa e históricos ficam neste dispositivo.
 
 ## Executar
 
@@ -26,7 +26,7 @@ npm run build
 npm run preview
 ```
 
-O build fica em `dist/`, preparado para GitHub Pages em `/aplicativo-habitos/`. Nenhuma publicação foi executada.
+O build fica em `dist/`, preparado para GitHub Pages em `/aplicativo-habitos/`. O endereço do aplicativo é https://thiagocarvalhosantos26-creator.github.io/aplicativo-habitos/.
 
 ## Publicar no GitHub Pages
 
@@ -36,13 +36,13 @@ O repositório local foi inicializado na branch **main**, com `origin` em `https
 C:\Users\Thiago\Desktop\aplicativo-habitos
 ```
 
-As etapas abaixo são para você executar quando decidir publicar; não foram executadas pelo assistente.
+O Pages já usa GitHub Actions. Para próximas atualizações, envie um commit para `main`; as instruções completas são:
 
 1. O repositório `thiagocarvalhosantos26-creator/aplicativo-habitos` já foi criado pelo proprietário. Use esse repositório para enviar o código-fonte à branch `main`; não é necessário criar outro.
 2. Inclua `src`, `public`, `scripts`, `.github/workflows/pages.yml`, `.gitignore`, `index.html`, `vite.config.ts`, `tsconfig.json`, `package.json`, **package-lock.json** e `README.md`. Não envie `node_modules`, `.tools`, `dist` ou arquivos de segredos.
 3. No repositório, abra **Settings → Pages → Build and deployment → Source** e selecione **GitHub Actions**.
 4. Abra **Actions → Publicar aplicativo no GitHub Pages → Run workflow** e escolha `main`. O workflow também executa em cada push para `main`. Se o primeiro push ocorreu antes de habilitar Pages, execute novamente depois de habilitá-lo.
-5. Aguarde os jobs de build e deploy terminarem. Abra a URL apresentada pelo ambiente `github-pages` ou em Settings → Pages. Para esse nome, o endereço normalmente será `https://SEU-USUARIO.github.io/aplicativo-habitos/` (exemplo, não uma publicação existente). Ative **Enforce HTTPS**, quando disponível.
+5. Aguarde os jobs de build e deploy terminarem. Abra a URL apresentada pelo ambiente `github-pages` ou em Settings → Pages: `https://thiagocarvalhosantos26-creator.github.io/aplicativo-habitos/`. HTTPS já está habilitado.
 
 O workflow instala com `npm ci`, executa os testes, gera e verifica o build e publica somente `dist` com as ações oficiais. Ele usa `contents: read` no build e `pages: write`/`id-token: write` no deploy, com dependência do build e ambiente `github-pages`. Não é necessário criar um token pessoal. Os runners são hospedados pelo GitHub (`ubuntu-latest`). Se seu repositório usar outra branch principal, ajuste `on.push.branches` em `.github/workflows/pages.yml`.
 
@@ -82,7 +82,7 @@ Os dados continuam somente no navegador/dispositivo, usando a chave `flexoes:v1`
 7. Feche e reabra o aplicativo pelo ícone. Confira se a configuração e o histórico permanecem.
 8. Depois do primeiro carregamento completo, feche o aplicativo, desligue Wi-Fi e dados móveis (ou ative modo avião) e abra novamente pelo ícone. O aplicativo e o histórico devem carregar offline. Reative a conexão ao terminar.
 
-As verificações em iPhone real, o workflow no GitHub e a URL publicada ficam pendentes até o envio do código e habilitação de Pages. Manifesto, ícones, registro do service worker, arquivos de precache e o build são conferidos localmente com `npm run check:pages`.
+As verificações em iPhone real continuam pendentes. Manifesto, ícones, registro do service worker, arquivos de precache e o build são conferidos localmente com `npm run check:pages`.
 
 ## Uso
 
@@ -90,11 +90,28 @@ Configure meta, quantidade por série, descanso, data inicial e frequência. Ini
 
 O descanso usa um horário de término persistido; pausas guardam o tempo restante. Ao atualizar ou retornar do segundo plano, o aplicativo recalcula o descanso e apresenta a próxima série, sem confirmar exercícios automaticamente. Voltar ao início mantém a sessão; use “Retomar treino”. Encerrar salva uma sessão parcial, e descartar exige confirmação. Sessões são deduplicadas por identificador.
 
+### Lavar as vasilhas
+
+O cartão mostra o progresso de hoje e permite marcar uma realização ou desfazer a última marcação de hoje. A meta inicial é 1 vez por dia, editável para um inteiro positivo. Configure todos os dias ou dias da semana e uma data de início. Em dias não programados, as marcações são identificadas como extras; o calendário não muda. Ao atingir a meta, o botão fica desabilitado. Toques rápidos repetidos são ignorados por um intervalo de um segundo. O progresso usa datas locais e se atualiza na virada do dia e no retorno do segundo plano, sem apagar o histórico.
+
+No histórico, escolha o hábito no seletor. Configuração, registros e sessões de flexões permanecem separados das vasilhas. A migração aceita o registro publicado anteriormente sem exigir redefinição: acrescenta `version: 2` e `dishes`, mantendo `config`, `active` e `history`. A leitura não grava a migração; o formato ampliado é persistido na próxima ação salva. Se a validação falhar, o conteúdo bruto permanece intacto e a tela de recuperação bloqueia gravações. A chave continua sendo `flexoes:v1` para preservar os dados no endereço atual.
+
+### Atualizar o aplicativo já instalado
+
+Não desinstale o aplicativo nem limpe os dados do Safari.
+
+1. Conclua ou encerre e salve qualquer treino em andamento antes de trocar de versão.
+2. Conecte o iPhone à internet e abra o aplicativo no endereço habitual. Aguarde alguns segundos para baixar a atualização.
+3. Se aparecer **Carregar atualização**, toque quando não houver treino ativo. Os dados serão mantidos. O botão fica bloqueado enquanto uma sessão estiver em andamento, inclusive se você tiver voltado à tela inicial.
+4. Na primeira atualização a partir da versão antiga, o botão ainda não existe nessa versão. Abra com internet para baixar a nova versão, feche completamente o aplicativo e as abas do Safari que estiverem nesse mesmo endereço e reabra pelo ícone. O novo service worker pode então assumir, e a migração preserva os registros. Se ainda aparecer a versão antiga, repita a abertura com internet, aguarde e feche/reabra novamente.
+
+O service worker novo aguarda sem `skipWaiting` automático e sem recarregamento automático. Só uma confirmação explícita provoca recarga, com nova verificação da sessão salva antes da ativação e antes da recarga. A atualização e a migração não limpam o armazenamento.
+
 ## Recuperação dos dados
 
 Uma falha de leitura ou validação bloqueia todas as gravações normais e mostra a tela de recuperação. “Tentar novamente” relê o registro. Quando o navegador permite ler o conteúdo bruto, “Baixar dados para recuperação” exporta exatamente esse conteúdo, mesmo que o JSON seja inválido. Nenhum registro é removido silenciosamente. A redefinição substitui os registros locais pelos valores iniciais somente após a confirmação “Sim, apagar e redefinir”. Cancelar ou pressionar Escape mantém os dados.
 
-Falhas de gravação têm aviso separado e permitem tentar salvar novamente. O aplicativo mantém o último estado salvo até a gravação funcionar. Os dados válidos da primeira versão continuam usando a chave `flexoes:v1` e o mesmo formato, sem migração destrutiva.
+Falhas de gravação têm aviso separado e permitem tentar salvar novamente. O aplicativo mantém o último estado salvo até a gravação funcionar. Os dados válidos da primeira versão continuam usando a chave `flexoes:v1`, com migração compatível para incluir vasilhas.
 
 ## iPhone e offline
 
@@ -106,6 +123,9 @@ Não há som, vibração nem notificações em segundo plano. A tela pode ser bl
 
 - `src/App.tsx`: telas e fluxo de treino.
 - `src/domain.ts`: calendário local, divisão das séries e cronômetro.
+- `src/dishes.ts` e `src/DishesView.tsx`: regras, cartão, configuração e histórico de vasilhas.
+- `src/dishes.test.ts`: testes do hábito novo e da migração.
+- `src/usePwaUpdate.ts`: atualização da PWA sem recarga durante treino ativo.
 - `src/storage.ts`: persistência e deduplicação.
 - `src/Modal.tsx`: diálogos nativos, foco limitado à janela e restauração do foco.
 - `src/style.css`: layout mobile first, acessibilidade e áreas seguras.
@@ -115,10 +135,12 @@ Não há som, vibração nem notificações em segundo plano. A tela pode ser bl
 - `scripts/check-pages.mjs`: validação dos caminhos e arquivos da PWA no build.
 - `public/icons/`: ícones de instalação.
 
-Os 17 testes automatizados cobrem divisão com restante, dois dias de descanso, datas locais, validação, descanso vencido/pausado, retomada pelo armazenamento, última série, parcial, deduplicação, frequência inválida, histórico com `null`, sessões inconsistentes, falhas de acesso e compatibilidade com registros da primeira versão.
+Os 28 testes automatizados cobrem as regras e a persistência de flexões e vasilhas: migração de dados antigos com treino ativo, marcação, deduplicação, desfazer, meta, virada do dia, datas locais, frequência, extras, reabertura, independência entre hábitos e dados inconsistentes.
 
 Na revisão, foram verificadas no Chrome com perfil isolado: recuperação sem gravações sobre dados inválidos, download bruto, tentativa de leitura novamente, confirmação de redefinição, falhas de gravação, foco inicial, Tab/Shift+Tab, Escape, fundo sem interação e restauração do foco. As telas inicial (meta de 10.000), configuração, treino, descanso, histórico, confirmação e resumo foram verificadas nas larguras de 320, 375 e 390 pixels, sem rolagem horizontal ou corte dos conteúdos testados.
 
 Na preparação para GitHub Pages, `npm ci`, os 17 testes, o build e `npm run check:pages` passaram. No Chrome com perfil isolado, 12 verificações passaram em `/aplicativo-habitos/`, incluindo carregamento, treino, descanso, retomada após recarga, pausa, parcial, correção de quantidade, toques repetidos, conclusão e abertura offline.
 
-Ainda precisam de teste em iPhone real: Safari e modo Tela de Início, VoiceOver e teclado nos diálogos, download do arquivo de recuperação, áreas seguras, instalação/offline e retorno após bloquear a tela. O workflow foi preparado localmente, mas ainda não foi executado no GitHub. Nenhum repositório remoto foi criado e nenhuma publicação foi realizada.
+Nesta atualização, 32 verificações passaram no Chrome com perfil isolado, incluindo os dois hábitos, virada do dia simulada no retorno, persistência, offline, layouts de 320/375/390 pixels e atualização explícita da PWA, inclusive quando um treino começa durante a ativação. Outras 5 verificações usaram uma cópia da versão antiga publicada: o novo service worker aguardou durante um treino sem recarregar; fechar e reabrir carregou a versão nova com opção de retomar e sem alterar o registro antigo; uma migração inválida preservou o conteúdo bruto.
+
+Ainda precisam de teste em iPhone real: Safari e modo Tela de Início, VoiceOver e teclado nos diálogos, download do arquivo de recuperação, áreas seguras, atualização do app instalado e retorno após bloquear a tela. As simulações no Chrome não substituem testes em um iPhone físico.

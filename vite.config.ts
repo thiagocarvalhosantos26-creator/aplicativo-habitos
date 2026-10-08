@@ -11,13 +11,13 @@ export default defineConfig({
     VitePWA({
       base,
       scope: base,
-      registerType: "autoUpdate",
+      registerType: "prompt",
       includeAssets: ["icons/*.png"],
       manifest: {
-        name: "Flexões · Seu ritmo",
-        short_name: "Flexões",
+        name: "Hábitos · Seu ritmo",
+        short_name: "Seu ritmo",
         lang: "pt-BR",
-        description: "Seu treino de flexões, uma série de cada vez.",
+        description: "Flexões e cuidados com a casa, um dia de cada vez.",
         theme_color: "#173e35",
         background_color: "#f5f6f0",
         display: "standalone",
@@ -34,6 +34,8 @@ export default defineConfig({
         ],
       },
       workbox: {
+        skipWaiting: false,
+        clientsClaim: false,
         globPatterns: ["**/*.{js,css,html,png,svg,woff2}"],
         navigateFallback: `${base}index.html`,
       },

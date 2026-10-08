@@ -503,3 +503,32 @@ button:disabled {
     transform: scale(0.98);
   }
 }
+.dishes-card {
+  margin-top: 32px;
+}
+.dishes-card .brand-icon {
+  margin: 0;
+}
+.dishes-card .quick-links {
+  margin-top: 20px;
+}
+.dishes-progress {
+  margin: 24px 0 16px;
+  overflow-wrap: anywhere;
+}
+.dishes-progress strong {
+  color: #213e35;
+  font-size: 26px;
+  letter-spacing: -0.5px;
+}
+.history-filter {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  margin: 24px 0;
+}
+.update-notice {
+  margin-bottom: 24px;
+}
