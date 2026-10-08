@@ -1,0 +1,14 @@
+node_modules/
+dist/
+*.tsbuildinfo
+.tools/
+.env
+.env.*
+!.env.example
+.aws/
+.netlify/
+*.pem
+*.key
+*.p12
+*.pfx
+.npmrc
