@@ -1,7 +1,10 @@
-name: Publicar aplicativo no GitHub Pages (manual)
+name: Desativar acesso publico ao aplicativo de habitos
 
 on:
-  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/pages.yml
 
 permissions:
   contents: read
@@ -11,46 +14,43 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Obter código
-        uses: actions/checkout@v7
-      - name: Preparar Node.js
-        uses: actions/setup-node@v7
-        with:
-          node-version: "22"
-          cache: npm
-      - name: Configurar GitHub Pages
-        id: pages
-        uses: actions/configure-pages@v6
-      - name: Instalar dependências
-        run: npm ci
-      - name: Executar testes
-        run: npm test
-      - name: Gerar build de produção
-        run: npm run build
-        env:
-          PAGES_BASE_PATH: ${{ steps.pages.outputs.base_path }}/
-      - name: Conferir caminhos da PWA
-        run: npm run check:pages
-        env:
-          PAGES_BASE_PATH: ${{ steps.pages.outputs.base_path }}/
-      - name: Enviar artefato do Pages
-        uses: actions/upload-pages-artifact@v5
-        with:
-          path: dist
-
   deploy:
-    needs: build
     runs-on: ubuntu-latest
     permissions:
+      contents: read
       pages: write
       id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - name: Publicar no GitHub Pages
+      - name: Criar aviso de aplicativo indisponivel
+        run: |
+          mkdir -p site-offline
+          cat > site-offline/index.html <<'HTML'
+          <!doctype html>
+          <html lang="pt-BR">
+            <head>
+              <meta charset="utf-8">
+              <meta name="viewport" content="width=device-width,initial-scale=1">
+              <meta name="robots" content="noindex,nofollow,noarchive">
+              <title>Aplicativo desativado</title>
+              <style>
+                body { margin:0; min-height:100vh; display:grid; place-items:center; font-family:system-ui,-apple-system,sans-serif; background:#fff; color:#222; text-align:center; padding:24px; box-sizing:border-box }
+                main { max-width:420px }
+                h1 { font-size:1.5rem; margin-bottom:10px }
+                p { line-height:1.6; color:#555 }
+              </style>
+            </head>
+            <body><main><h1>Aplicativo desativado</h1><p>Este aplicativo nao esta mais disponivel online.</p></main></body>
+          </html>
+          HTML
+      - name: Configurar GitHub Pages
+        uses: actions/configure-pages@v6
+      - name: Enviar pagina de indisponibilidade
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: site-offline
+      - name: Publicar aviso
         id: deployment
         uses: actions/deploy-pages@v5
